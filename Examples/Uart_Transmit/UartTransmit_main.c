@@ -1,6 +1,7 @@
-#include "usart.h"
+#include "usart1.h"
 
-int main{
+int main()
+{
     USART1_Init();
     while(1)
     {
