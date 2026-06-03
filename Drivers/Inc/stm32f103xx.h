@@ -56,16 +56,67 @@ typedef struct
 
 typedef struct
 {
-	volatile uint32_t SR;
-	volatile uint32_t DR;
-	volatile uint32_t BRR;
-	volatile uint32_t CR1;
-	volatile uint32_t CR2;
-	volatile uint32_t CR3;
-	volatile uint32_t GTPR;
+	volatile uint32_t SR;  //0x00
+	volatile uint32_t DR;  //0x04
+	volatile uint32_t BRR; //0x08
+	volatile uint32_t CR1; //0x0C
+	volatile uint32_t CR2; //0x10
+	volatile uint32_t CR3; //0x14
+	volatile uint32_t GTPR; //0x18
 } USART1_TypeDef;
 
 #define USART1 ((USART1_TypeDef*) USART1_BASE)
 
+//SPI
+
+#define SPI1_BASE (APB2PERIPH_BASE + 0x3000)
+
+
+typedef struct
+{
+	volatile uint32_t CR1;		//0x00
+	volatile uint32_t CR2;		//0x04
+	volatile uint32_t SR;		//0x08
+	volatile uint32_t DR;		//0x0C
+	volatile uint32_t CRCPR;	//0x10
+	volatile uint32_t RXCRCR;	//0x14
+	volatile uint32_t TXCRCR;	//0x18
+	volatile uint32_t I2SCFGR;	//0x1C
+	volatile uint32_t I2SPR;	//0x20
+} SPI1_TypeDef;
+
+#define SPI1 ((SPI1_TypeDef*) SPI1_BASE)
+
+//TIM2
+
+#define TIM2_BASE (PERIPHERAL_BASE)
+
+typedef struct
+{
+	volatile uint32_t CR1;		//0x00
+	volatile uint32_t CR2;		//0x04
+	volatile uint32_t SMCR;		//0x08
+	volatile uint32_t DIER;		//0x0C
+	volatile uint32_t SR;		//0x10
+	volatile uint32_t EGR;		//0x14
+	volatile uint32_t CCMR1;	//0x18
+	volatile uint32_t CCMR2;	//0x1C
+	volatile uint32_t CCER;		//0x20
+	volatile uint32_t CNT;		//0x24
+	volatile uint32_t PSC;		//0x28
+	volatile uint32_t ARR;		//0x2C
+	volatile uint32_t RES1; 	//0x30	Reserved
+	volatile uint32_t CCR1;		//0x34
+	volatile uint32_t CCR2;		//0x38
+	volatile uint32_t CCR3;		//0x3C
+	volatile uint32_t CCR4;		//0x40
+	volatile uint32_t RES2;		//0x44  Reserved
+	volatile uint32_t DCR;		//0x48
+	volatile uint32_t DMAR;		//0x4C
+} TIM2_TypeDef;
+
+#define TIM2 ((TIM2_TypeDef*) TIM2_BASE)
+
 #endif
+
 
