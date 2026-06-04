@@ -8,9 +8,9 @@ void USART1_Init(void)
 
 	RCC_USART1_CLK_ENABLE();
 
-	IO_Init(GPIOA, 9, GPIO_AF_PP_50MHz);
-	IO_Init(GPIOA, 10, GPIO_INPUT_FI);
-	USART1->BRR = 0x45;// Baud Rate 115200
+	IO_Init(GPIOA, GPIO_PIN_9, GPIO_AF_PP_50MHz);
+	IO_Init(GPIOA, GPIO_PIN_10, GPIO_INPUT_FI);
+	USART1->BRR = 0x45; // Baud Rate 115200
 
 	USART1->CR1 |= USART1_CR1_UE; // USART enable
 	USART1->CR1 |= USART1_CR1_TE; // Transmitter enable
@@ -59,3 +59,17 @@ void USART1_ReceiveString(char *buffer)
 
 	*buffer = '\0';
 }
+
+int USART1_StringToInt(char *str)
+{
+    int num = 0;
+
+    while(*str)
+    {
+        num = num * 10 + (*str - '0');
+        str++;
+    }
+
+    return num;
+}
+

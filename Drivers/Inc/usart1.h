@@ -15,5 +15,6 @@ void USART1_SendChar(char data);
 void USART1_SendString(char *str);
 char USART1_ReceiveChar(void);
 void USART1_ReceiveString(char *buffer);
+int USART1_StringToInt(char *str);
 
 #endif
