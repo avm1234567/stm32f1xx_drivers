@@ -20,7 +20,22 @@
 
 #define TIM2_EGR_UG (1 << 0)
 
+#define TIM2_CCMR1_CC1S_OC (0 << 0)		//Output mode
+#define TIM2_CCMR1_CC1S_IPTR1 (1 << 0) 	//INPUT mode IC1 mapped on TI1
+#define TIM2_CCMR1_CC1S_IPTR2 (2 << 0)	//INPUT mode IC1 mapped on TI2
+#define TIM2_CCMR1_CC1S_IPTRC (3 << 0)	//INPUT mode IC1 mapped on TRC
+#define TIM2_CCMR1_CC1S_Msk   (3 << 0)
+#define TIM2_CCMR1_OC1M_Msk   (7 << 4)
+#define TIM2_CCMR1_OC1M_PWM1 (6 << 4) 	//PWM mode 1
+#define TIM2_CCMR1_OC1M_PWM2 (7 << 4)	//PWM mode 2
+#define TIM2_CCMR1_OC1PE (1 << 3)
+
+#define TIM2_CCER_CC1E (1 << 0)
+
+
 void TIM2_Init(void);
 void TIM2_DelayMs(uint16_t ms);
+void TIM2_PWM_Init(uint16_t psc, uint16_t arr);
+void TIM2_PWM_SetDutyCycle(uint16_t duty);
 
 #endif
