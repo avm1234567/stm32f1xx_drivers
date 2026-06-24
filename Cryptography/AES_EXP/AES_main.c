@@ -74,6 +74,66 @@ void AES_SubsByte(void){
     }
 }
 
+void AES_ShiftRows(void){
+    for(int row = 1;row < 4; row++){
+        for(int x = 0; x < row; x++){
+		    uint8_t temp = state[row][0];
+		    state[row][0] = state[row][1];
+		    state[row][1] = state[row][2];
+		    state[row][2] = state[row][3];
+		    state[row][3] = temp;
+	    }
+    }
+}
+
+uint8_t AES_Mul2(uint8_t x)
+{
+	if(x & 0x80){
+		return (x << 1) ^ 0x1B;
+	}
+	else{
+		return (x << 1);
+	}
+}
+
+uint8_t AES_Mul3(uint8_t x)
+{
+	return AES_Mul2(x) ^ x;
+}
+
+void AES_MixCol(void){
+	for(int col = 0;col < 4;col++){
+		uint8_t s0 = state[0][col];
+		uint8_t s1 = state[1][col];
+		uint8_t s2 = state[2][col];
+		uint8_t s3 = state[3][col];
+
+        state[0][col] =
+            AES_Mul2(s0) ^
+            AES_Mul3(s1) ^
+            s2 ^
+            s3;
+
+        state[1][col] =
+            s0 ^
+            AES_Mul2(s1) ^
+            AES_Mul3(s2) ^
+            s3;
+
+        state[2][col] =
+            s0 ^
+            s1 ^
+            AES_Mul2(s2) ^
+            AES_Mul3(s3);
+
+        state[3][col] =
+            AES_Mul3(s0) ^
+            s1 ^
+            s2 ^
+            AES_Mul2(s3);
+	}
+}
+
 int main(){
     USART1_Init();
     char msg[50];
@@ -96,5 +156,16 @@ int main(){
        	USART1_SendString("Substitute Byte:");
        	USART1_SendString("\r\n");
        	AES_PrintState();
+        USART1_SendString("\r\n");
+       	AES_ShiftRows();
+       	USART1_SendString("Shifted Rows:");
+       	USART1_SendString("\r\n");
+       	AES_PrintState();
+        USART1_SendString("\r\n");
+        AES_MixCol();
+        USART1_SendString("Mixed Columns:");
+        USART1_SendString("\r\n");
+        AES_PrintState();
+        USART1_SendString("\r\n");
     }
 }
