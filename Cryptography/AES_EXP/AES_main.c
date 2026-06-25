@@ -1,8 +1,11 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include "usart1.h"
 
-const uint8_t sbox[256] =
+uint8_t state[4][4];
+uint8_t key[4][4];
+uint8_t words[44][4]; 
+
+const uint8_t sbox[256] = //Substitution box
 {
 0x63,0x7C,0x77,0x7B,0xF2,0x6B,0x6F,0xC5,0x30,0x01,0x67,0x2B,0xFE,0xD7,0xAB,0x76,
 0xCA,0x82,0xC9,0x7D,0xFA,0x59,0x47,0xF0,0xAD,0xD4,0xA2,0xAF,0x9C,0xA4,0x72,0xC0,
@@ -22,14 +25,7 @@ const uint8_t sbox[256] =
 0x8C,0xA1,0x89,0x0D,0xBF,0xE6,0x42,0x68,0x41,0x99,0x2D,0x0F,0xB0,0x54,0xBB,0x16
 };
 
-uint8_t state[4][4]; // State matrix for AES
-uint8_t key[4][4] =
-{
-    {'K','E','Y','1'},
-    {'K','E','Y','2'},
-    {'K','E','Y','3'},
-    {'K','E','Y','4'}
-};
+//STATE
 
 void AES_State(uint8_t *input){
 	int k = 0;
@@ -54,42 +50,73 @@ void AES_PrintState(void){
     }
 }
 
-void AES_AddRoundKey(void){
+//KEY
+
+void AES_Key(uint8_t *input){
+	int k = 0;
+	 for(int col = 0;col < 4; col++){
+		 for(int row = 0;row < 4; row++){
+			 key[row][col] = input[k];
+			 k++;
+		 }
+	 }
+}
+
+void AES_PrintKey(void){
+    char buffer[10];
     for(int row = 0; row < 4; row++)
     {
-        for(int col = 0; col < 4; col++)
+    	for(int col = 0; col < 4; col++)
         {
-            state[row][col] ^= key[row][col];
+            sprintf(buffer,"%02X ",key[row][col]);
+            USART1_SendString(buffer);
         }
+        USART1_SendString("\r\n");
     }
 }
+
+//ADD ROUND KEY
+
+void AES_AddRoundKey(uint8_t round){
+
+	for(int row = 0; row < 4; row++){
+		for(int col = 0; col < 4; col++){
+			state[row][col] ^= words[(round* 4)+ col][row];
+		}
+	}
+}
+
+//SUBSTITUTE BYTES
 
 void AES_SubsByte(void){
-    for(int row = 0; row < 4; row++)
-    {
-        for(int col = 0; col < 4; col++)
-        {
-            state[row][col] = sbox[state[row][col]];
-        }
-    }
+	for(int row = 0; row < 4; row++){
+		for(int col = 0; col < 4; col++){
+			state[row][col] = sbox[state[row][col]];
+		}
+	}
 }
 
+//SHIFT ROWS
+
 void AES_ShiftRows(void){
-    for(int row = 1;row < 4; row++){
-        for(int x = 0; x < row; x++){
-		    uint8_t temp = state[row][0];
-		    state[row][0] = state[row][1];
-		    state[row][1] = state[row][2];
-		    state[row][2] = state[row][3];
-		    state[row][3] = temp;
-	    }
-    }
+for(int row = 1; row < 4; row++){
+
+	for(int x = 0; x < row; x++){
+		uint8_t temp = state[row][0];
+		state[row][0] = state[row][1];
+		state[row][1] = state[row][2];
+		state[row][2] = state[row][3];
+		state[row][3] = temp;
+	}
 }
+}
+
+//MIX COLUMNS
 
 uint8_t AES_Mul2(uint8_t x)
 {
-	if(x & 0x80){
-		return (x << 1) ^ 0x1B;
+	if(x & 0x80){ //check if the bit is set
+		return (x << 1) ^ 0x1B; 
 	}
 	else{
 		return (x << 1);
@@ -134,12 +161,75 @@ void AES_MixCol(void){
 	}
 }
 
+//KEY EXPANSION
+
+	static uint8_t rcon_index = 0;
+	const uint8_t Rcon[10] =  //Round constants
+	{
+	    0x01,
+	    0x02,
+	    0x04,
+	    0x08,
+	    0x10,
+	    0x20,
+	    0x40,
+	    0x80,
+	    0x1B,
+	    0x36
+	};
+
+void AES_RotWord(uint8_t *word){
+
+    uint8_t temp = word[0];
+    word[0] = word[1];
+    word[1] = word[2];
+    word[2] = word[3];
+    word[3] = temp;
+}
+
+void AES_SubsWord(uint8_t *word){
+	for(int i = 0;i < 4;i++){
+		word[i] = sbox[word[i]] ;
+	}
+}
+
+void AES_KeyExpansion(void){
+	for(int row=0;row<4;row++){
+		 words[0][row] = key[row][0];
+		 words[1][row] = key[row][1];
+		 words[2][row] = key[row][2];
+		 words[3][row] = key[row][3];
+	}
+
+	for(int j=3;j < 43;j++){
+		if((j+1) % 4 == 0){
+			uint8_t temp[4];
+			for(int k=0;k<4;k++){
+				temp[k] = words[j][k];
+			}
+			AES_RotWord(temp);
+			AES_SubsWord(temp);
+			temp[0] ^= Rcon[rcon_index];
+			rcon_index++;
+			for(int l=0;l<4;l++){
+				words[j+1][l]= words[j-3][l] ^ temp[l];
+			}
+
+		}
+		else{
+			for(int m=0;m<4;m++)
+			words[j+1][m]= words[j-3][m] ^ words[j][m];
+		}
+	}
+}
+
 int main(){
     USART1_Init();
     char msg[50];
+    char cikey[50]; 
 
     while(1){
-        USART1_SendString("Enter PlainText:");
+       USART1_SendString("Enter PlainText:");
     	USART1_ReceiveString(msg);
        	USART1_SendString("\r\n");
        	USART1_SendString(msg);
@@ -147,25 +237,40 @@ int main(){
        	AES_State((uint8_t *)msg);
        	AES_PrintState();
        	USART1_SendString("\r\n");
-       	AES_AddRoundKey();
-       	USART1_SendString("Round Key:");
+
+       	USART1_SendString("Enter Key:");
+       	USART1_ReceiveString(cikey);
+       	USART1_SendString("\r\n");
+       	USART1_SendString(cikey);
+       	USART1_SendString("\r\n");
+       	AES_Key((uint8_t *)cikey);
+       	AES_PrintKey();
+       	USART1_SendString("\r\n");
+
+       	USART1_SendString("Key Expansion called done");
+       	AES_KeyExpansion();
+       	USART1_SendString("\r\n");
+
+       	AES_AddRoundKey(0); //Initial Round 
+       	USART1_SendString("Round 0:");
        	USART1_SendString("\r\n");
        	AES_PrintState();
        	USART1_SendString("\r\n");
+
+        for(int round = 1;round<10;round++){ //Rounds 1-9
+       		AES_SubsByte();
+       		AES_ShiftRows();
+       		AES_MixCol();
+       		AES_AddRoundKey(round);
+       	}
+
        	AES_SubsByte();
-       	USART1_SendString("Substitute Byte:");
-       	USART1_SendString("\r\n");
-       	AES_PrintState();
-        USART1_SendString("\r\n");
        	AES_ShiftRows();
-       	USART1_SendString("Shifted Rows:");
+       	AES_AddRoundKey(10);//Final Round
+
+       	USART1_SendString("Final State:"); //Print Final State or Cipher Text
        	USART1_SendString("\r\n");
        	AES_PrintState();
-        USART1_SendString("\r\n");
-        AES_MixCol();
-        USART1_SendString("Mixed Columns:");
-        USART1_SendString("\r\n");
-        AES_PrintState();
-        USART1_SendString("\r\n");
+
     }
 }
