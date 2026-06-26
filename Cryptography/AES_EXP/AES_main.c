@@ -123,10 +123,28 @@ uint8_t AES_Mul2(uint8_t x)
 	}
 }
 
-uint8_t AES_Mul3(uint8_t x)
-{
-	return AES_Mul2(x) ^ x;
+uint8_t GF_Mul(uint8_t x,uint8_t mul){
+	switch(mul)
+	{
+		case 0x01:
+			return x;
+		case 0x02:
+			return AES_Mul2(x);
+		case 0x03:
+			return AES_Mul2(x) ^ x;
+		case 0x09:
+			return AES_Mul2(AES_Mul2(AES_Mul2(x))) ^ x;
+		case 0x0B:
+			return AES_Mul2(AES_Mul2(AES_Mul2(x))) ^ AES_Mul2(x) ^ x;
+		case 0x0D:
+			return AES_Mul2(AES_Mul2(AES_Mul2(x))) ^ AES_Mul2(AES_Mul2(x)) ^ x;
+		case 0x0E:
+			return AES_Mul2(AES_Mul2(AES_Mul2(x))) ^ AES_Mul2(AES_Mul2(x)) ^ AES_Mul2(x);
+		default:
+			return 0;
+	}
 }
+
 
 void AES_MixCol(void){
 	for(int col = 0;col < 4;col++){
@@ -135,29 +153,13 @@ void AES_MixCol(void){
 		uint8_t s2 = state[2][col];
 		uint8_t s3 = state[3][col];
 
-        state[0][col] =
-            AES_Mul2(s0) ^
-            AES_Mul3(s1) ^
-            s2 ^
-            s3;
+        state[0][col] = GF_Mul(s0,0x02) ^ GF_Mul(s1,0x03) ^ s2 ^ s3;
 
-        state[1][col] =
-            s0 ^
-            AES_Mul2(s1) ^
-            AES_Mul3(s2) ^
-            s3;
+        state[1][col] = s0 ^ GF_Mul(s1,0x02) ^ GF_Mul(s2,0x03) ^ s3;
 
-        state[2][col] =
-            s0 ^
-            s1 ^
-            AES_Mul2(s2) ^
-            AES_Mul3(s3);
+        state[2][col] = s0 ^ s1 ^ GF_Mul(s2,0x02) ^ GF_Mul(s3,0x03);
 
-        state[3][col] =
-            AES_Mul3(s0) ^
-            s1 ^
-            s2 ^
-            AES_Mul2(s3);
+        state[3][col] = GF_Mul(s0,0x03) ^ s1 ^ s2 ^ GF_Mul(s3,0x02);
 	}
 }
 
