@@ -163,5 +163,6 @@ int main(void)
        	    USART1_SendString(buf);
        	}
        	USART1_SendString("\r\n");
+		
     }
 }
