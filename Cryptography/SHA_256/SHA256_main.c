@@ -25,6 +25,20 @@ const uint32_t K[64] =
     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
+uint32_t H[8] = {
+	    0x6A09E667,
+	    0xBB67AE85,
+	    0x3C6EF372,
+	    0xA54FF53A,
+	    0x510E527F,
+	    0x9B05688C,
+	    0x1F83D9AB,
+	    0x5BE0CD19
+};
+uint32_t H_new[8];
+
+uint32_t W[64];
+
 uint32_t ROTR(uint32_t x, uint8_t n){
 	return ((x >> n) | (x << (32 - n)));
 }
@@ -65,18 +79,67 @@ void SHA256_PadMessage(uint8_t *msg, uint8_t len, uint8_t *pad){
 	}
 }
 
+void SHA256_Parsing(uint8_t *pad){
+
+	for(int i = 0; i < 16; i++){
+	W[i] =((uint32_t)pad[4*i]   << 24) | ((uint32_t)pad[4*i+1] << 16) | ((uint32_t)pad[4*i+2] << 8 ) | ((uint32_t)pad[4*i+3]);
+	}
+
+	for(int i = 16; i < 64; i++)
+	{
+	    W[i] = Sig1(W[i-2]) +  W[i-7] + Sig0(W[i-15]) +  W[i-16];
+	}
+}
+
+void SHA256_Compress(void){
+	uint32_t a = H[0];
+	uint32_t b = H[1];
+	uint32_t c = H[2];
+	uint32_t d = H[3];
+	uint32_t e = H[4];
+	uint32_t f = H[5];
+	uint32_t g = H[6];
+	uint32_t h = H[7];
+
+	for(int i=0; i<64;i++){
+		uint32_t T1 = h + E1(e) + Ch(e,f,g) + K[i] + W[i];
+		uint32_t T2 = E0(a) + Maj(a,b,c);
+		h = g;
+		g = f;
+		f = e;
+		e = d + T1;
+		d = c;
+		c = b;
+		b = a;
+		a = T1 + T2;
+	}
+
+	memcpy(H_new,H,sizeof(H));
+
+    H_new[0] += a;
+    H_new[1] += b;
+    H_new[2] += c;
+    H_new[3] += d;
+    H_new[4] += e;
+    H_new[5] += f;
+    H_new[6] += g;
+    H_new[7] += h;
+}
+
 int main(void)
 {
     USART1_Init();
 
-        char msg[64];
+    char msg[64];
     uint8_t cikey[64];
     char retmsg[64];
+	char buf[12];
 
     while(1){
-        USART1_SendString("Enter PlainText:");
+		USART1_SendString("Enter PlainText:");
     	USART1_ReceiveString(msg);
        	USART1_SendString("\r\n");
+
        	USART1_SendString(msg);
 
        	SHA256_PadMessage((uint8_t *)msg,strlen(msg),cikey);
@@ -89,6 +152,15 @@ int main(void)
        		{
        		    USART1_SendString("\r\n");
        		}
+       	}
+       	USART1_SendString("\r\n");
+
+       	SHA256_Parsing(cikey);
+       	SHA256_Compress();
+       	for(int i = 0; i < 8; i++)
+       	{
+       	    sprintf(buf, "%08lX", (unsigned long)H_new[i]);
+       	    USART1_SendString(buf);
        	}
        	USART1_SendString("\r\n");
     }
